@@ -11,6 +11,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.NoSuchElementException;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class KvByteService implements KVService {
 
@@ -21,7 +23,7 @@ public class KvByteService implements KVService {
     private final Dao<byte[]> dao;
     private boolean isStarted;
 
-    private final Object lock = new Object();
+    private final Lock lock = new ReentrantLock();
 
     public KvByteService(int port, Dao<byte[]> dao) throws IOException {
         this.httpServer = HttpServer.create(new InetSocketAddress(port), 0);
@@ -30,7 +32,8 @@ public class KvByteService implements KVService {
 
     @Override
     public void start() {
-        synchronized (lock) {
+        lock.lock();
+        try {
             if (isStarted) {
                 log.error("Server already started");
                 return;
@@ -38,23 +41,30 @@ public class KvByteService implements KVService {
             registerHandlers();
             httpServer.start();
             isStarted = true;
-            if (log.isInfoEnabled()) {
-                log.info("Server started on port {}", httpServer.getAddress().getPort());
-            }
+        } finally {
+            lock.unlock();
         }
+
+        if (log.isInfoEnabled()) {
+            log.info("Server started on port {}", httpServer.getAddress().getPort());
+        }
+
     }
 
     @Override
     public void stop() {
-        synchronized (lock) {
+        lock.lock();
+        try {
             if (!isStarted) {
                 log.error("Trying to stop server which was not started");
             }
             isStarted = false;
             httpServer.stop(DELAY_TO_STOP_SECONDS);
-            if (log.isInfoEnabled()) {
-                log.info("Server stopped");
-            }
+        } finally {
+            lock.unlock();
+        }
+        if (log.isInfoEnabled()) {
+            log.info("Server stopped");
         }
     }
 
