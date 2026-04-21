@@ -5,19 +5,23 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 public abstract class AbstractHashRouter implements Router {
-
-    protected long hash(String key) {
+    private static final ThreadLocal<MessageDigest> MD5_THREAD_LOCAL = ThreadLocal.withInitial(() -> {
         try {
-            MessageDigest md5 = MessageDigest.getInstance("MD5");
-            byte[] digest = md5.digest(key.getBytes(StandardCharsets.UTF_8));
-
-            long hash = 0;
-            for (int i = 0; i < 8; i++) {
-                hash = (hash << 8) | (digest[i] & 0xFF);
-            }
-            return hash;
+            return MessageDigest.getInstance("MD5");
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("MD5 not available", e);
         }
+    });
+
+    protected long hash(String key) {
+        MessageDigest md5 = MD5_THREAD_LOCAL.get();
+        md5.reset();
+        byte[] digest = md5.digest(key.getBytes(StandardCharsets.UTF_8));
+
+        long hash = 0;
+        for (int i = 0; i < 8; i++) {
+            hash = (hash << 8) | (digest[i] & 0xFF);
+        }
+        return hash;
     }
 }

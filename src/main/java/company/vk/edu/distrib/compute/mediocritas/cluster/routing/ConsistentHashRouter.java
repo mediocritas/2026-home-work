@@ -4,10 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 public class ConsistentHashRouter extends AbstractHashRouter {
     private final NavigableMap<Long, String> ring = new ConcurrentSkipListMap<>();
+    private final Set<String> uniqueNodes = ConcurrentHashMap.newKeySet();
     private final int virtualNodesCount;
 
     public ConsistentHashRouter(int virtualNodesCount) {
@@ -15,6 +18,7 @@ public class ConsistentHashRouter extends AbstractHashRouter {
     }
 
     public void addNode(String endpoint) {
+        uniqueNodes.add(endpoint);
         for (int i = 0; i < virtualNodesCount; i++) {
             String virtualNodeKey = endpoint + "#" + i;
             long hash = hash(virtualNodeKey);
@@ -23,6 +27,7 @@ public class ConsistentHashRouter extends AbstractHashRouter {
     }
 
     public void removeNode(String endpoint) {
+        uniqueNodes.remove(endpoint);
         for (int i = 0; i < virtualNodesCount; i++) {
             String virtualNodeKey = endpoint + "#" + i;
             long hash = hash(virtualNodeKey);
@@ -46,6 +51,6 @@ public class ConsistentHashRouter extends AbstractHashRouter {
     }
 
     public List<String> getAllNodes() {
-        return new ArrayList<>(ring.values()).stream().distinct().toList();
+        return new ArrayList<>(uniqueNodes);
     }
 }
