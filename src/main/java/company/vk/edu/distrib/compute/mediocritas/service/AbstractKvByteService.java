@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.util.NoSuchElementException;
 import java.util.concurrent.locks.Lock;
@@ -43,7 +44,7 @@ public abstract class AbstractKvByteService implements KVService {
             httpServer.start();
             isStarted = true;
         } catch (IOException e) {
-            throw new RuntimeException("Failed to start server", e);
+            throw new UncheckedIOException("Failed to start server", e);
         } finally {
             lock.unlock();
         }

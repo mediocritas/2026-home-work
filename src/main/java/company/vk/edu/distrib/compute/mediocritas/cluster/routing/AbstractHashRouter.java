@@ -9,7 +9,7 @@ public abstract class AbstractHashRouter implements Router {
         try {
             return MessageDigest.getInstance("MD5");
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("MD5 not available", e);
+            throw new IllegalStateException("MD5 not available", e);
         }
     });
 

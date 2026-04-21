@@ -8,6 +8,7 @@ import company.vk.edu.distrib.compute.mediocritas.service.ClusterKvByteService;
 import company.vk.edu.distrib.compute.mediocritas.storage.FileByteDao;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,19 +26,22 @@ public class PushkinaKVCluster implements KVCluster {
                 .map(port -> "http://localhost:" + port)
                 .collect(Collectors.toList());
 
-        for (String endpoint : endpoints) {
-            router.addNode(endpoint);
-        }
+        endpoints.forEach(router::addNode);
 
-        for (int port : ports) {
-            try {
-                String endpoint = "http://localhost:" + port;
-                String dataPath = "./data-cluster-" + port;
-                KVService service = new ClusterKvByteService(port, new FileByteDao(dataPath), router, proxyClient);
-                nodes.put(endpoint, service);
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to create cluster node", e);
-            }
+        ports.stream()
+                .collect(Collectors.toMap(
+                        port -> "http://localhost:" + port,
+                        port -> createClusterNode(port, router, proxyClient)
+                ))
+                .forEach(nodes::put);
+    }
+
+    private static KVService createClusterNode(int port, Router router, HttpProxyClient proxyClient) {
+        try {
+            String dataPath = "./data-cluster-" + port;
+            return new ClusterKvByteService(port, new FileByteDao(dataPath), router, proxyClient);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to create cluster node on port " + port, e);
         }
     }
 

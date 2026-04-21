@@ -17,6 +17,7 @@ public class ConsistentHashRouter extends AbstractHashRouter {
         this.virtualNodesCount = virtualNodesCount;
     }
 
+    @Override
     public void addNode(String endpoint) {
         uniqueNodes.add(endpoint);
         for (int i = 0; i < virtualNodesCount; i++) {
@@ -26,6 +27,7 @@ public class ConsistentHashRouter extends AbstractHashRouter {
         }
     }
 
+    @Override
     public void removeNode(String endpoint) {
         uniqueNodes.remove(endpoint);
         for (int i = 0; i < virtualNodesCount; i++) {
@@ -35,6 +37,7 @@ public class ConsistentHashRouter extends AbstractHashRouter {
         }
     }
 
+    @Override
     public String getNodeForKey(String key) {
         if (ring.isEmpty()) {
             throw new IllegalStateException("No nodes in the ring");
@@ -50,6 +53,7 @@ public class ConsistentHashRouter extends AbstractHashRouter {
         return entry.getValue();
     }
 
+    @Override
     public List<String> getAllNodes() {
         return new ArrayList<>(uniqueNodes);
     }

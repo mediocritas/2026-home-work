@@ -7,16 +7,19 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class RendezvousHashRouter extends AbstractHashRouter {
     private final List<String> nodes = new CopyOnWriteArrayList<>();
 
+    @Override
     public void addNode(String endpoint) {
         if (!nodes.contains(endpoint)) {
             nodes.add(endpoint);
         }
     }
 
+    @Override
     public void removeNode(String endpoint) {
         nodes.remove(endpoint);
     }
 
+    @Override
     public String getNodeForKey(String key) {
         if (nodes.isEmpty()) {
             throw new IllegalStateException("No nodes available");
@@ -36,6 +39,7 @@ public class RendezvousHashRouter extends AbstractHashRouter {
         return selectedNode;
     }
 
+    @Override
     public List<String> getAllNodes() {
         return new ArrayList<>(nodes);
     }
