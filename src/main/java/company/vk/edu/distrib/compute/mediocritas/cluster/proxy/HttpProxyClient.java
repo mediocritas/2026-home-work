@@ -18,11 +18,7 @@ public class HttpProxyClient {
     }
 
     public HttpResponse<byte[]> proxyGet(String endpoint, String key) throws IOException, InterruptedException {
-        return proxyGet(endpoint, key, null);
-    }
-
-    public HttpResponse<byte[]> proxyGet(String endpoint, String key, Integer ack) throws IOException, InterruptedException {
-        String url = buildUrl(endpoint, key, ack);
+        String url = buildUrl(endpoint, key);
         HttpRequest request = HttpRequest.newBuilder()
                 .GET()
                 .uri(URI.create(url))
@@ -34,12 +30,7 @@ public class HttpProxyClient {
 
     public HttpResponse<Void> proxyPut(String endpoint, String key, byte[] value)
             throws IOException, InterruptedException {
-        return proxyPut(endpoint, key, value, null);
-    }
-
-    public HttpResponse<Void> proxyPut(String endpoint, String key, byte[] value, Integer ack)
-            throws IOException, InterruptedException {
-        String url = buildUrl(endpoint, key, ack);
+        String url = buildUrl(endpoint, key);
         HttpRequest request = HttpRequest.newBuilder()
                 .PUT(HttpRequest.BodyPublishers.ofByteArray(value))
                 .uri(URI.create(url))
@@ -51,12 +42,7 @@ public class HttpProxyClient {
 
     public HttpResponse<Void> proxyDelete(String endpoint, String key)
             throws IOException, InterruptedException {
-        return proxyDelete(endpoint, key, null);
-    }
-
-    public HttpResponse<Void> proxyDelete(String endpoint, String key, Integer ack)
-            throws IOException, InterruptedException {
-        String url = buildUrl(endpoint, key, ack);
+        String url = buildUrl(endpoint, key);
         HttpRequest request = HttpRequest.newBuilder()
                 .DELETE()
                 .uri(URI.create(url))
@@ -67,15 +53,7 @@ public class HttpProxyClient {
     }
 
     private String buildUrl(String endpoint, String key) {
-        return buildUrl(endpoint, key, null);
-    }
-
-    private String buildUrl(String endpoint, String key, Integer ack) {
-        String url = endpoint + "/v0/entity?id=" + key;
-        if (ack != null) {
-            url += "&ack=" + ack;
-        }
-        return url;
+        return endpoint + "/v0/entity?id=" + key;
     }
 }
 
