@@ -14,6 +14,7 @@ public class ConsistentHashRouter extends AbstractHashRouter {
     private final int virtualNodesCount;
 
     public ConsistentHashRouter(int virtualNodesCount) {
+        super();
         this.virtualNodesCount = virtualNodesCount;
     }
 
