@@ -134,20 +134,39 @@ public abstract class AbstractKvByteService implements KVService {
     }
 
     protected String parseId(String query) {
+        return parseParam(query, "id");
+    }
+
+    protected Integer parseAck(String query) {
+        String value = parseParamOrNull(query, "ack");
+        if (value == null) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Parameter 'ack' must be a number");
+        }
+    }
+
+    private String parseParam(String query, String paramName) {
+        String value = parseParamOrNull(query, paramName);
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException("Parameter '" + paramName + "' is missing or empty");
+        }
+        return value;
+    }
+
+    private String parseParamOrNull(String query, String paramName) {
         if (query == null || query.isBlank()) {
-            throw new IllegalArgumentException("Query is empty. Expected 'id='");
+            return null;
         }
-        if (query.contains("&")) {
-            throw new IllegalArgumentException("Only one query parameter 'id' is allowed");
+        for (String part : query.split("&")) {
+            String[] kv = part.split("=", 2);
+            if (kv.length == 2 && paramName.equals(kv[0])) {
+                return kv[1];
+            }
         }
-        String[] parts = query.split("=", 2);
-        if (parts.length != 2 || !"id".equals(parts[0])) {
-            throw new IllegalArgumentException("Invalid query format. Expected 'id=<value>'");
-        }
-        String id = parts[1];
-        if (id.isBlank()) {
-            throw new IllegalArgumentException("Parameter 'id' cannot be empty");
-        }
-        return id;
+        return null;
     }
 }
