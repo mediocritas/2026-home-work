@@ -121,7 +121,9 @@ public class VersionedFileDao {
                     count++;
                 }
             } catch (IOException e) {
-                log.warn("Failed to read tombstone for key '{}', skipping", entry.getKey(), e);
+                if (log.isWarnEnabled()) {
+                    log.warn("Failed to read tombstone for key '{}', skipping", entry.getKey(), e);
+                }
             }
         }
         return count;

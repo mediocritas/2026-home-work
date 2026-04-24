@@ -79,7 +79,9 @@ public abstract class AbstractKvByteService implements KVService {
     }
 
     protected void registerAdditionalHandlers(HttpServer server) {
-        log.debug("No additional HTTP handlers registered for {}", server.getAddress());
+        if (log.isDebugEnabled()) {
+            log.debug("No additional HTTP handlers registered for {}", server.getAddress());
+        }
     }
 
     protected HttpHandler wrapHandler(HttpHandler handler) {

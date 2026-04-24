@@ -15,6 +15,9 @@ import java.util.concurrent.atomic.AtomicLong;
 public final class ReplicaStats {
 
     private static final String PATH_PREFIX = "/stats/replica/";
+    private static final String GET_METHOD = "GET";
+    private static final String ACCESS_SUBPATH = "access";
+    private static final int SINGLE_SEGMENT = 1;
 
     private final int replicationFactor;
     private final List<VersionedFileDao> replicas;
@@ -55,7 +58,7 @@ public final class ReplicaStats {
     }
 
     private void handle(HttpExchange http) throws IOException {
-        if (!"GET".equalsIgnoreCase(http.getRequestMethod())) {
+        if (!GET_METHOD.equalsIgnoreCase(http.getRequestMethod())) {
             http.sendResponseHeaders(405, -1);
             return;
         }
@@ -80,9 +83,9 @@ public final class ReplicaStats {
         }
 
         String json;
-        if (parts.length == 1) {
+        if (parts.length == SINGLE_SEGMENT) {
             json = buildReplicaStats(replicaId);
-        } else if ("access".equals(parts[1])) {
+        } else if (ACCESS_SUBPATH.equals(parts[1])) {
             json = buildAccessStats(replicaId);
         } else {
             http.sendResponseHeaders(404, -1);
