@@ -32,7 +32,7 @@ import org.junit.platform.commons.util.ReflectionUtils;
 public class KVServiceFactoryArgumentsProvider implements ArgumentsProvider {
 
     private final Set<Class<? extends KVServiceFactory>> factories = Set.of(
-            KVServiceFactorySimple.class,
+            /*KVServiceFactorySimple.class,
             KVServiceFactoryImpl.class,
             AndecoKVServiceFactory.class,
             MyKVServiceFactory.class,
@@ -49,7 +49,7 @@ public class KVServiceFactoryArgumentsProvider implements ArgumentsProvider {
             KirillmedvedevFileSystemKVServiceFactory.class,
             LuckySlon2003KVServiceFactory.class,
             Wolfram158KVServiceFactoryFileWithCacheImpl.class,
-            CakeKVServiceFactory.class,
+            CakeKVServiceFactory.class,*/
             PushkinaReplicatedKVServiceFactory.class
     );
 

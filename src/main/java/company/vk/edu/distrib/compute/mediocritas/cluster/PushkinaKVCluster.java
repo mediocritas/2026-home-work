@@ -3,6 +3,7 @@ package company.vk.edu.distrib.compute.mediocritas.cluster;
 import company.vk.edu.distrib.compute.KVCluster;
 import company.vk.edu.distrib.compute.KVService;
 import company.vk.edu.distrib.compute.mediocritas.cluster.proxy.GrpcProxyClient;
+import company.vk.edu.distrib.compute.mediocritas.cluster.proxy.HttpProxyClient;
 import company.vk.edu.distrib.compute.mediocritas.cluster.proxy.ProxyClient;
 import company.vk.edu.distrib.compute.mediocritas.cluster.routing.Router;
 import company.vk.edu.distrib.compute.mediocritas.service.ClusterKvByteService;
@@ -17,13 +18,17 @@ import java.util.stream.Collectors;
 
 public class PushkinaKVCluster implements KVCluster {
 
+    private static final String PROXY_CLIENT_TYPE_PROPERTY = "proxy.client.type";
+    private static final String GRPC = "grpc";
+    private static final String HTTP = "http";
+
     private final Map<String, KVService> services = new ConcurrentHashMap<>();
     private final List<String> endpoints;
 
     public PushkinaKVCluster(List<Node> clusterNodes, Router router) {
         List<Node> clusterNodes1 = List.copyOf(clusterNodes);
 
-        ProxyClient proxyClient = new GrpcProxyClient();
+        ProxyClient proxyClient = createProxyClient();
 
         clusterNodes1.forEach(router::addNode);
 
@@ -34,6 +39,17 @@ public class PushkinaKVCluster implements KVCluster {
         for (Node node : clusterNodes1) {
             services.put(node.httpEndpoint(), createService(node, router, proxyClient));
         }
+    }
+
+    private static ProxyClient createProxyClient() {
+        String type = System.getProperty(PROXY_CLIENT_TYPE_PROPERTY, GRPC);
+        return switch (type) {
+            case GRPC -> new GrpcProxyClient();
+            case HTTP -> new HttpProxyClient();
+            default -> throw new IllegalArgumentException(
+                    "Unknown proxy client type: " + type + ". Supported: " + GRPC + ", " + HTTP
+            );
+        };
     }
 
     private static KVService createService(Node node, Router router, ProxyClient proxyClient) {

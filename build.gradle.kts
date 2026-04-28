@@ -108,8 +108,17 @@ val integrationTest = tasks.register<Test>("integrationTest") {
 }
 
 application {
-    mainClass = "company.vk.edu.distrib.compute.Server"
+    // Allow overriding via `-PmainClass=...` (used by load_test.sh to launch BenchmarkServer)
+    mainClass = (project.findProperty("mainClass") as String?) ?: "company.vk.edu.distrib.compute.Server"
     applicationDefaultJvmArgs = listOf("-Xmx128m")
+}
+
+// Forward `-Dproxy.client.type=...` (and other -D props) to the spawned JVM running `./gradlew run`
+tasks.named<JavaExec>("run") {
+    systemProperties = System.getProperties()
+        .stringPropertyNames()
+        .filter { it.startsWith("proxy.") || it.startsWith("router.") || it.startsWith("grpc.") }
+        .associateWith { System.getProperty(it) }
 }
 
 checkstyle {
