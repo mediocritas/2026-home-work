@@ -10,15 +10,15 @@ import company.vk.edu.distrib.compute.mediocritas.storage.FileByteDao;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class PushkinaKVCluster implements KVCluster {
 
     private final List<Node> clusterNodes;
-    private final Map<String, KVService> services = new LinkedHashMap<>();
+    private final Map<String, KVService> services = new ConcurrentHashMap<>();
     private final List<String> endpoints;
 
     public PushkinaKVCluster(List<Node> clusterNodes, Router router) {

@@ -1,14 +1,6 @@
 package company.vk.edu.distrib.compute.mediocritas.cluster.proxy;
 
-public final class ProxyResponse<T> {
-
-    private final int statusCode;
-    private final T body;
-
-    private ProxyResponse(int statusCode, T body) {
-        this.statusCode = statusCode;
-        this.body = body;
-    }
+public record ProxyResponse<T>(int statusCode, T body) {
 
     public static ProxyResponse<byte[]> ok(byte[] body) {
         return new ProxyResponse<>(200, body);
@@ -36,13 +28,5 @@ public final class ProxyResponse<T> {
 
     public static <T> ProxyResponse<T> of(int statusCode, T body) {
         return new ProxyResponse<>(statusCode, body);
-    }
-
-    public int statusCode() {
-        return statusCode;
-    }
-
-    public T body() {
-        return body;
     }
 }

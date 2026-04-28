@@ -38,7 +38,7 @@ public class ClusterKvByteService extends AbstractKvByteService {
     protected final Router router;
     protected final ProxyClient proxyClient;
 
-    private Server grpcServer;
+    private final Server grpcServer;
 
     public ClusterKvByteService(
             Node localNode,
@@ -50,17 +50,17 @@ public class ClusterKvByteService extends AbstractKvByteService {
         this.localNode = localNode;
         this.router = router;
         this.proxyClient = proxyClient;
+        this.grpcServer = ServerBuilder
+                .forPort(localNode.grpcPort())
+                .addService(new KvServiceImpl())
+                .build();
     }
 
     @Override
     public void start() {
         super.start();
         try {
-            grpcServer = ServerBuilder
-                    .forPort(localNode.grpcPort())
-                    .addService(new KvServiceImpl())
-                    .build()
-                    .start();
+            grpcServer.start();
             if (log.isInfoEnabled()) {
                 log.info("gRPC server started on port {}", localNode.grpcPort());
             }
@@ -71,17 +71,14 @@ public class ClusterKvByteService extends AbstractKvByteService {
 
     @Override
     public void stop() {
-        if (grpcServer != null) {
-            grpcServer.shutdown();
-            try {
-                if (!grpcServer.awaitTermination(1, TimeUnit.SECONDS)) {
-                    grpcServer.shutdownNow();
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+        grpcServer.shutdown();
+        try {
+            if (!grpcServer.awaitTermination(1, TimeUnit.SECONDS)) {
                 grpcServer.shutdownNow();
             }
-            grpcServer = null;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            grpcServer.shutdownNow();
         }
         super.stop();
     }
