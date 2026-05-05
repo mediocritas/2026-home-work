@@ -39,48 +39,56 @@ public class ClusterMonitor implements Runnable {
     }
 
     private void render() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(ANSI_CLEAR);
-        sb.append(ANSI_BOLD).append(ANSI_CYAN)
+        int estimatedSize = 512 + nodes.size() * 80;
+        StringBuilder sb = new StringBuilder(estimatedSize);
+        sb.append(ANSI_CLEAR)
+                .append(ANSI_BOLD).append(ANSI_CYAN)
                 .append("╔══════════════════════════════════════════╗\n")
                 .append("║     Cluster State Monitor (live)         ║\n")
                 .append("╚══════════════════════════════════════════╝\n")
-                .append(ANSI_RESET);
-        sb.append(ANSI_BOLD)
+                .append(ANSI_RESET)
+                .append(ANSI_BOLD)
                 .append(String.format("  %-8s %-12s %-10s%n", "NODE", "ROLE", "LEADER"))
-                .append(ANSI_RESET);
-        sb.append("  ──────────────────────────────────────\n");
+                .append(ANSI_RESET)
+                .append("  ──────────────────────────────────────\n");
 
         for (ClusterNode node : nodes) {
-            NodeRole role = node.getRole();
-            int leaderId = node.getCurrentLeaderId();
-
-            String roleLabel = switch (role) {
-                case LEADER -> "LEADER";
-                case FOLLOWER -> "FOLLOWER";
-                case DOWN -> "DOWN";
-            };
-
-            String roleColor = switch (role) {
-                case LEADER -> ANSI_GREEN + ANSI_BOLD;
-                case FOLLOWER -> ANSI_YELLOW;
-                case DOWN -> ANSI_RED;
-            };
-
-            String rolePadded = String.format("%-8s", roleLabel);
-            String roleColored = roleColor + rolePadded + ANSI_RESET;
-
-            String leaderStr = leaderId < 0 ? "?" : String.valueOf(leaderId);
-
-            sb.append(String.format("  node-%-3d ", node.getId()))
-              .append(roleColored)
-              .append(String.format("  %-10s%n", leaderStr));
+            sb.append(buildNodeLine(node));
         }
 
-        sb.append("  ──────────────────────────────────────\n");
-        sb.append(ANSI_CYAN).append("  Refresh every ").append(REFRESH_INTERVAL_MS).append("ms")
-                .append(ANSI_RESET).append("\n");
+        sb.append("  ──────────────────────────────────────\n")
+                .append(ANSI_CYAN).append("  Refresh every ").append(REFRESH_INTERVAL_MS)
+                .append("ms").append(ANSI_RESET).append('\n');
 
         System.out.print(sb);
+    }
+
+    private String buildNodeLine(ClusterNode node) {
+        NodeRole role = node.getRole();
+        int leaderId = node.getCurrentLeaderId();
+        String roleLabel = roleLabel(role);
+        String roleColor = roleColor(role);
+        String rolePadded = String.format("%-8s", roleLabel);
+        String roleColored = roleColor + rolePadded + ANSI_RESET;
+        String leaderStr = leaderId < 0 ? "?" : String.valueOf(leaderId);
+        return String.format("  node-%-3d ", node.getId())
+                + roleColored
+                + String.format("  %-10s%n", leaderStr);
+    }
+
+    private static String roleLabel(NodeRole role) {
+        return switch (role) {
+            case LEADER -> "LEADER";
+            case FOLLOWER -> "FOLLOWER";
+            case DOWN -> "DOWN";
+        };
+    }
+
+    private static String roleColor(NodeRole role) {
+        return switch (role) {
+            case LEADER -> ANSI_GREEN + ANSI_BOLD;
+            case FOLLOWER -> ANSI_YELLOW;
+            case DOWN -> ANSI_RED;
+        };
     }
 }

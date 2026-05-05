@@ -11,11 +11,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ClusterNode implements Runnable {
 
-    private static final Logger LOG = Logger.getLogger(ClusterNode.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(ClusterNode.class.getName());
 
     private static final long PING_INTERVAL_MS = 1_500;
     private static final long ELECTION_TIMEOUT_MS = 1_000;
@@ -31,7 +32,7 @@ public class ClusterNode implements Runnable {
     private volatile Map<Integer, ClusterNode> peers;
     private final Random random = new Random();
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
-    private volatile boolean forceDown = false;
+    private volatile boolean forcedDown;
 
     public ClusterNode(int id) {
         this.id = id;
@@ -123,10 +124,11 @@ public class ClusterNode implements Runnable {
 
         AtomicBoolean answered = new AtomicBoolean(false);
 
+        Message electMsg = new Message(MessageType.ELECT, id);
         for (int pid : higherIds) {
             ClusterNode target = peers.get(pid);
             if (target != null) {
-                target.receive(new Message(MessageType.ELECT, id));
+                target.receive(electMsg);
                 scheduler.schedule(() -> {
                     if (!target.isDown()) {
                         answered.set(true);
@@ -149,9 +151,10 @@ public class ClusterNode implements Runnable {
         currentLeaderId.set(id);
         electionInProgress.set(false);
 
+        Message victoryMsg = new Message(MessageType.VICTORY, id);
         for (int pid : peers.keySet()) {
             if (pid != id) {
-                send(pid, new Message(MessageType.VICTORY, id));
+                send(pid, victoryMsg);
             }
         }
     }
@@ -185,7 +188,7 @@ public class ClusterNode implements Runnable {
     }
 
     private void randomFailureCheck() {
-        if (forceDown) return;
+        if (forcedDown) return;
         if (!isDown() && random.nextDouble() < FAILURE_PROBABILITY) {
             simulateFailure();
             scheduler.schedule(this::simulateRecovery, RECOVERY_TIME_MS, TimeUnit.MILLISECONDS);
@@ -212,12 +215,12 @@ public class ClusterNode implements Runnable {
     }
 
     public void forceDown() {
-        forceDown = true;
+        forcedDown = true;
         simulateFailure();
     }
 
     public void forceUp() {
-        forceDown = false;
+        forcedDown = false;
         simulateRecovery();
     }
 
@@ -251,7 +254,9 @@ public class ClusterNode implements Runnable {
     }
 
     private void log(String msg) {
-        LOG.info(String.format("[node-%d | %-8s | leader=%-3s] %s",
-                id, role.get(), currentLeaderId.get() < 0 ? "?" : currentLeaderId.get(), msg));
+        if (LOGGER.isLoggable(Level.INFO)) {
+            LOGGER.info(String.format("[node-%d | %-8s | leader=%-3s] %s",
+                    id, role.get(), currentLeaderId.get() < 0 ? "?" : currentLeaderId.get(), msg));
+        }
     }
 }

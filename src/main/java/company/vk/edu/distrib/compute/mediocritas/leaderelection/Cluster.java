@@ -1,9 +1,9 @@
 package company.vk.edu.distrib.compute.mediocritas.leaderelection;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Cluster {
 
@@ -13,7 +13,7 @@ public class Cluster {
     private Thread monitorThread;
 
     public Cluster(int n) {
-        Map<Integer, ClusterNode> peers = new HashMap<>();
+        Map<Integer, ClusterNode> peers = new ConcurrentHashMap<>();
 
         for (int i = 1; i <= n; i++) {
             ClusterNode node = new ClusterNode(i);
