@@ -4,26 +4,34 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.IntStream;
 
 public class Cluster {
 
-    private final List<ClusterNode> nodes = new ArrayList<>();
+    private static final Logger LOGGER = Logger.getLogger(Cluster.class.getName());
+
+    private final List<ClusterNode> nodes;
     private final List<Thread> threads = new ArrayList<>();
     private ClusterMonitor monitor;
     private Thread monitorThread;
 
     public Cluster(int n) {
-        Map<Integer, ClusterNode> peers = new ConcurrentHashMap<>();
+        List<ClusterNode> created = IntStream.rangeClosed(1, n)
+                .mapToObj(ClusterNode::new)
+                .toList();
 
-        for (int i = 1; i <= n; i++) {
-            ClusterNode node = new ClusterNode(i);
-            nodes.add(node);
-            peers.put(i, node);
+        Map<Integer, ClusterNode> peers = new ConcurrentHashMap<>();
+        for (ClusterNode node : created) {
+            peers.put(node.getId(), node);
         }
 
-        for (ClusterNode node : nodes) {
+        for (ClusterNode node : created) {
             node.setPeers(peers);
         }
+
+        this.nodes = new ArrayList<>(created);
     }
 
     public void start() {
@@ -68,12 +76,16 @@ public class Cluster {
     }
 
     public void printStatus() {
-        System.out.println("=== Cluster Status ===");
-        for (ClusterNode n : nodes) {
-            System.out.printf("  node-%-2d | %-8s | leader=%-3s%n",
-                    n.getId(), n.getRole(),
-                    n.getCurrentLeaderId() < 0 ? "?" : n.getCurrentLeaderId());
+        if (LOGGER.isLoggable(Level.INFO)) {
+            StringBuilder sb = new StringBuilder(256);
+            sb.append("=== Cluster Status ===\n");
+            for (ClusterNode n : nodes) {
+                sb.append(String.format("  node-%-2d | %-8s | leader=%-3s%n",
+                        n.getId(), n.getRole(),
+                        n.getCurrentLeaderId() < 0 ? "?" : n.getCurrentLeaderId()));
+            }
+            sb.append("======================");
+            LOGGER.info(sb.toString());
         }
-        System.out.println("======================");
     }
 }

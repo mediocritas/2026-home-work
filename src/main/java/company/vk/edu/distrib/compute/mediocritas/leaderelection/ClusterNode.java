@@ -28,18 +28,18 @@ public class ClusterNode implements Runnable {
     private final AtomicReference<NodeRole> role = new AtomicReference<>(NodeRole.FOLLOWER);
     private final AtomicInteger currentLeaderId = new AtomicInteger(-1);
     private final AtomicBoolean electionInProgress = new AtomicBoolean(false);
+    private final AtomicBoolean forcedDown = new AtomicBoolean(false);
     private final BlockingQueue<Message> inbox = new LinkedBlockingQueue<>();
-    private volatile Map<Integer, ClusterNode> peers;
+    private final AtomicReference<Map<Integer, ClusterNode>> peersRef = new AtomicReference<>();
     private final Random random = new Random();
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
-    private volatile boolean forcedDown;
 
     public ClusterNode(int id) {
         this.id = id;
     }
 
     public void setPeers(Map<Integer, ClusterNode> peers) {
-        this.peers = peers;
+        peersRef.set(peers);
     }
 
     @Override
@@ -108,11 +108,16 @@ public class ClusterNode implements Runnable {
     }
 
     private void startElection() {
-        if (isDown()) return;
-        if (!electionInProgress.compareAndSet(false, true)) return;
+        if (isDown()) {
+            return;
+        }
+        if (!electionInProgress.compareAndSet(false, true)) {
+            return;
+        }
 
         log("starting election (ELECT -> nodes with higher ID)");
 
+        Map<Integer, ClusterNode> peers = peersRef.get();
         List<Integer> higherIds = peers.keySet().stream()
                 .filter(pid -> pid > id)
                 .toList();
@@ -145,12 +150,15 @@ public class ClusterNode implements Runnable {
     }
 
     private void declareVictory() {
-        if (isDown()) return;
+        if (isDown()) {
+            return;
+        }
         log("VICTORY! Declaring myself leader -> broadcasting to all");
         role.set(NodeRole.LEADER);
         currentLeaderId.set(id);
         electionInProgress.set(false);
 
+        Map<Integer, ClusterNode> peers = peersRef.get();
         Message victoryMsg = new Message(MessageType.VICTORY, id);
         for (int pid : peers.keySet()) {
             if (pid != id) {
@@ -160,7 +168,9 @@ public class ClusterNode implements Runnable {
     }
 
     private void pingLeaderIfFollower() {
-        if (isDown() || role.get() != NodeRole.FOLLOWER) return;
+        if (isDown() || role.get() != NodeRole.FOLLOWER) {
+            return;
+        }
 
         int leaderId = currentLeaderId.get();
         if (leaderId < 0) {
@@ -168,7 +178,7 @@ public class ClusterNode implements Runnable {
             return;
         }
 
-        ClusterNode leader = peers.get(leaderId);
+        ClusterNode leader = peersRef.get().get(leaderId);
         if (leader == null || leader.isDown()) {
             log("leader node-" + leaderId + " unavailable -> starting election");
             currentLeaderId.set(-1);
@@ -188,7 +198,9 @@ public class ClusterNode implements Runnable {
     }
 
     private void randomFailureCheck() {
-        if (forcedDown) return;
+        if (forcedDown.get()) {
+            return;
+        }
         if (!isDown() && random.nextDouble() < FAILURE_PROBABILITY) {
             simulateFailure();
             scheduler.schedule(this::simulateRecovery, RECOVERY_TIME_MS, TimeUnit.MILLISECONDS);
@@ -215,17 +227,17 @@ public class ClusterNode implements Runnable {
     }
 
     public void forceDown() {
-        forcedDown = true;
+        forcedDown.set(true);
         simulateFailure();
     }
 
     public void forceUp() {
-        forcedDown = false;
+        forcedDown.set(false);
         simulateRecovery();
     }
 
     private void send(int targetId, Message msg) {
-        ClusterNode target = peers.get(targetId);
+        ClusterNode target = peersRef.get().get(targetId);
         if (target != null) {
             target.receive(msg);
         }

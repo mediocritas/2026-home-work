@@ -1,9 +1,12 @@
 package company.vk.edu.distrib.compute.mediocritas.leaderelection;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Logger;
 
 public class ClusterMonitor implements Runnable {
 
+    private static final Logger LOGGER = Logger.getLogger(ClusterMonitor.class.getName());
     private static final long REFRESH_INTERVAL_MS = 1_000;
 
     private static final String ANSI_RESET = "\u001B[0m";
@@ -14,20 +17,26 @@ public class ClusterMonitor implements Runnable {
     private static final String ANSI_CYAN = "\u001B[36m";
     private static final String ANSI_CLEAR = "\u001B[2J\u001B[H";
 
+    private static final String HEADER =
+            "╔══════════════════════════════════════════╗\n"
+            + "║     Cluster State Monitor (live)         ║\n"
+            + "╚══════════════════════════════════════════╝\n";
+    private static final String SEPARATOR = "  ──────────────────────────────────────\n";
+
     private final List<ClusterNode> nodes;
-    private volatile boolean running = true;
+    private final AtomicBoolean running = new AtomicBoolean(true);
 
     public ClusterMonitor(List<ClusterNode> nodes) {
         this.nodes = nodes;
     }
 
     public void stop() {
-        running = false;
+        running.set(false);
     }
 
     @Override
     public void run() {
-        while (running && !Thread.currentThread().isInterrupted()) {
+        while (running.get() && !Thread.currentThread().isInterrupted()) {
             render();
             try {
                 Thread.sleep(REFRESH_INTERVAL_MS);
@@ -42,25 +51,21 @@ public class ClusterMonitor implements Runnable {
         int estimatedSize = 512 + nodes.size() * 80;
         StringBuilder sb = new StringBuilder(estimatedSize);
         sb.append(ANSI_CLEAR)
-                .append(ANSI_BOLD).append(ANSI_CYAN)
-                .append("╔══════════════════════════════════════════╗\n")
-                .append("║     Cluster State Monitor (live)         ║\n")
-                .append("╚══════════════════════════════════════════╝\n")
-                .append(ANSI_RESET)
+                .append(ANSI_BOLD).append(ANSI_CYAN).append(HEADER).append(ANSI_RESET)
                 .append(ANSI_BOLD)
                 .append(String.format("  %-8s %-12s %-10s%n", "NODE", "ROLE", "LEADER"))
                 .append(ANSI_RESET)
-                .append("  ──────────────────────────────────────\n");
+                .append(SEPARATOR);
 
         for (ClusterNode node : nodes) {
             sb.append(buildNodeLine(node));
         }
 
-        sb.append("  ──────────────────────────────────────\n")
+        sb.append(SEPARATOR)
                 .append(ANSI_CYAN).append("  Refresh every ").append(REFRESH_INTERVAL_MS)
                 .append("ms").append(ANSI_RESET).append('\n');
 
-        System.out.print(sb);
+        LOGGER.info(sb.toString());
     }
 
     private String buildNodeLine(ClusterNode node) {
