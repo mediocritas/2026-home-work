@@ -2,6 +2,7 @@ package company.vk.edu.distrib.compute.mediocritas.leaderelection;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ClusterMonitor implements Runnable {
@@ -65,7 +66,9 @@ public class ClusterMonitor implements Runnable {
                 .append(ANSI_CYAN).append("  Refresh every ").append(REFRESH_INTERVAL_MS)
                 .append("ms").append(ANSI_RESET).append('\n');
 
-        LOGGER.info(sb.toString());
+        if (LOGGER.isLoggable(Level.INFO)) {
+            LOGGER.info(sb.toString());
+        }
     }
 
     private String buildNodeLine(ClusterNode node) {
