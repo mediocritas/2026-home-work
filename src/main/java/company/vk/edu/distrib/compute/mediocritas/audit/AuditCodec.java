@@ -8,6 +8,7 @@ import java.util.Base64;
 public final class AuditCodec {
 
     private static final String SEPARATOR = "\t";
+    private static final int AUDIT_EVENT_PARTS = 3;
     private static final Base64.Encoder ENCODER = Base64.getUrlEncoder().withoutPadding();
     private static final Base64.Decoder DECODER = Base64.getUrlDecoder();
 
@@ -24,7 +25,7 @@ public final class AuditCodec {
 
     public static AuditEvent decode(String value) {
         String[] parts = value.split(SEPARATOR, -1);
-        if (parts.length != 3) {
+        if (parts.length != AUDIT_EVENT_PARTS) {
             throw new IllegalArgumentException("Invalid audit event format");
         }
         long timestamp = Long.parseLong(parts[0]);
