@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -81,7 +82,9 @@ public class KvByteService implements KVService {
 
     private void handleEntity(HttpExchange http) throws IOException {
         String id = parseId(http.getRequestURI().getQuery());
-        switch (http.getRequestMethod()) {
+        String method = http.getRequestMethod();
+        beforeEntityRequest(method, id);
+        switch (method) {
             case "GET" -> {
                 byte[] data = dao.get(id);
                 http.sendResponseHeaders(200, data.length);
@@ -97,6 +100,11 @@ public class KvByteService implements KVService {
             }
             default -> http.sendResponseHeaders(405, -1);
         }
+    }
+
+    protected void beforeEntityRequest(String method, String id) throws IOException {
+        Objects.requireNonNull(method);
+        Objects.requireNonNull(id);
     }
 
     private void sendBody(HttpExchange http, byte[] data) throws IOException {
